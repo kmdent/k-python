@@ -58,5 +58,5 @@ ParselTongue.
 
 (define-type AnswerC
   [ValueA (value : CVal) (store : Store)]
-  [ReturnA (value : CVal)]
+  [ReturnA (value : CVal) (store :Store)]
   [ExceptionA (value : CVal) (store : Store)])

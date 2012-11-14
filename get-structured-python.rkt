@@ -15,7 +15,7 @@ structure that you define in python-syntax.rkt
 (define (get-structured-python pyjson)
   (match pyjson
     [(hash-table ('nodetype "Module") ('body expr-list))
-     (PySeq (map get-structured-python expr-list))]
+     (PyModule (map get-structured-python expr-list))]
     [(hash-table ('nodetype "Expr") ('value expr))
      (get-structured-python expr)]
     [(hash-table ('nodetype "Call")
@@ -33,7 +33,27 @@ structure that you define in python-syntax.rkt
     [(hash-table ('nodetype "Num")
                  ('n n))
      (PyNum n)]
+ 
+
+    ;; BEGIN Scoping
+
+    ;; return case
+    [(hash-table ('nodetype "Return")
+                 ('value value))
+     (PyReturn (get-structured-python value))]
     
+    
+    ;; global variable
+    [(hash-table ('nodetype "Global")
+                 ('names names))
+     (PyGlobal (map (lambda (name) (string->symbol name)) names))]
+    
+    ;; nonlocal variable
+    [(hash-table ('nodetype "Nonlocal")
+                 ('names names))
+     (PyNonlocal (map (lambda (name) (string->symbol name)) names))]
+
+    ;; END Scoping
     
     [(hash-table ('nodetype "BoolOp")
                  ('values values)

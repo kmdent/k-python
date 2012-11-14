@@ -4,6 +4,15 @@
          "python-core-syntax.rkt"
          "python-objects.rkt")
 
+(define (cascade-lets (ids : (listof symbol))
+                      (sts : (listof ScopeType))
+                      (exprs : (listof CExp))
+                      (body : CExp)) : CExp
+  (cond [(empty? ids) body]
+        [(cons? ids)
+         (CLet (first ids) (first sts) (first exprs) (cascade-lets (rest ids) (rest sts) (rest exprs) body))]))
+
+
 (define (str->cval (str : string)) : CExp
   (%to-object (VStr str)))
 

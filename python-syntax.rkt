@@ -1,6 +1,15 @@
 #lang plai-typed
 
 (define-type PyExpr
+  ;; Scoping issues
+  [PyGlobal (ids : (listof symbol))]
+  [PyNonlocal (ids : (listof symbol))]
+  [PyGlobalEnv]
+
+  ;; End scoping addit
+  
+  [PyGlobalEnv () (list)]
+
   [PySeq (es : (listof PyExpr))]
   
   ;;represents primitive operation with two or more arguments
