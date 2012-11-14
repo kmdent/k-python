@@ -2,30 +2,32 @@
 
 (define-type PyExpr
   [PySeq (es : (listof PyExpr))]
-  [PyNum (n : number)]
-  [PyId (x : symbol)]
-  [PyApp (fun : PyExpr) (args : (listof PyExpr))]
-  ;;Made by me:
-  [PyStr (s : string)]
-  [PyIf (test : PyExpr) (then : (listof PyExpr)) (orelse : (listof PyExpr))]
-  [PyBoolop (boolop : symbol) (values : (listof PyExpr))]
-  [PyUnaryOp (op : symbol) (arg : PyExpr)]
+  
+  ;;represents primitive operation with two or more arguments
+  [PyBoolOp (op : symbol) (values : (listof PyExpr))]
+  
   [PyBinOp (op : symbol) (left : PyExpr) (right : PyExpr)]
-  [PyCompare (left : PyExpr) (ops : (listof symbol)) (comparators : (listof PyExpr))]
-  [PyPass]
-  [PyNone]
+  
+  ;;represents unary primitives
+  [PyPrimOp (op : symbol) (arg : PyExpr)]
+  
+  ;;represents if statement
+  [PyIf (test : PyExpr) (body : PyExpr) (orelse : PyExpr)]
+  
+  [PyComp (left : PyExpr) (ops : (listof symbol)) (comparators : (listof PyExpr))]
+  
+  [PyAssign (lhs : PyExpr) (value : PyExpr)]
+  
   [PyLambda (args : (listof symbol)) (body : PyExpr)]
-  [PyRaise (exc : PyExpr)] ;(cause : PyExpr)]
-  [PyGlobal (ids : (listof symbol))]
-  [PyNonlocal (ids : (listof symbol))]
-  [PyAssign (targets : (listof PyExpr)) (value : PyExpr)]
-  [PySet (lhs : PyExpr) (value : PyExpr)]
-  [PyModule (program : PyExpr)]
-  [PyGlobalEnv]
   
-  [PyDef (name : symbol) (args : (listof symbol)) (body : PyExpr)] ;; deffun
-  [PyReturn (value : PyExpr)] ;; return
+  [PyVoid]
+  [PyPass]
   
-  [Py-NotExist] ;;THIS IS HERE ONLY SO THAT python-desugar won't complain about having completed all of the expressions
-  )
+  [PyRaise (exn : PyExpr)]
+  
+  [PyNum (n : number)]
+  [PyStr (s : string)]
+  [PyList (mutable : boolean) (elts : (listof PyExpr))]
+  [PyId (x : symbol)]
+  [PyApp (fun : PyExpr) (args : (listof PyExpr))])
 

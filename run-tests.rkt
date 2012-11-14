@@ -13,7 +13,7 @@
 (define INTERP-TIMEOUT-SECONDS 3)
 
 ;; run-for-n-seconds :: (-> (pairof string string)) number ->
-;; (pairof string string) U #f
+;;                      (pairof string string) U #f
 (define (run-for-n-seconds thnk n)
   (define current (current-thread))
   (define (wrapped-thunk)
@@ -130,7 +130,7 @@
     (run-test-spec interp spec)))
 
 ;; run-tests : (string port -> (pairof string string)) string ->
-;; (listof Result)
+;;             (listof Result)
 #|
 
   interp - An interpreter that accepts a filename and a port to read a
@@ -147,7 +147,7 @@
                 test3.psl.expected
                 subdir/
                   test2.psl
-                  test2.psl.expected
+                  test2.psl.expected 
                 subdir2/
                   subdir3/
                     test4.psl
@@ -155,7 +155,7 @@
 
             run-tests will use interp to run test1.psl, test2.psl, etc,
             and check the standard out/error of the interpreter against
-            the corresponding .expected and .error files. If a
+            the corresponding .expected and .error files.  If a
             .expected or .error file is omitted, it is assumed to be the
             empty string.
 
@@ -189,7 +189,7 @@
     (define (report-to s . args)
       (when (not (Result-timeout? f)) (apply report (cons s args))))
     (report "=====================================================\n")
-    (report "= Results for ~a =\n" (Result-name f))
+    (report "=   Results for ~a   =\n" (Result-name f))
     (report "=====================================================\n")
     (when (Result-timeout? f) (report-to "TEST TIMED OUT"))
     (report "=== Expected stdout ===\n~a\n" (Result-expected-out f))
@@ -213,3 +213,4 @@
 (define (json-summary results)
   (for/hash ((result results))
     (values (Result-name result) (successful-result result))))
+

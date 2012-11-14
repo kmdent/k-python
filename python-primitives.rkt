@@ -14,24 +14,36 @@ primitives here.
 
 (require (typed-in racket/base [display : (string -> void)]))
 
-(define (pretty arg) : string
-  (type-case CVal arg
+(define (pretty (arg  : PrimVal)) : string
+  (type-case PrimVal arg
     [VNum (n) (to-string n)]
     [VStr (s) s]
     [VTrue () "True"]
-    [VClosure (env args body) (error 'prim "Can't print closures yet")]
-    ;;Non-TA code:
-    [VNone () "void"]
     [VFalse () "False"]
-    [VPass () ""]
-    [VUnbound () "Unbound"]
-    ))
-  
+    [VNone () ""]
+    [VList (mutable elts) (foldl string-append
+                                 ""
+                                 (list (if mutable "[" "(") 
+                                       (foldl string-append 
+                                              "" 
+                                              (map (lambda (x) 
+                                                     (string-append (obj-to-string x) 
+                                                                    " ")) 
+                                                   elts))
+                                       (if mutable "]" ")")))]
+    [VClosure (env args body) (error 'prim "Can't print closures yet")]))
 
-(define (print arg)
-  (display (pretty arg)))
+(define (obj-to-string (obj : CVal)) : string
+  (type-case CVal obj
+    [VObject (primval fields) (pretty primval)]))
 
-(define (python-prim1 op arg)
+(define (print (arg : CVal))
+  (display (string-append (obj-to-string arg) "\n")))
+
+(define (python-prim1 (op : symbol) (arg : CVal))
   (case op
     [(print) (begin (print arg) arg)]))
+
+(define (%add left right)
+  (+ left right))
 

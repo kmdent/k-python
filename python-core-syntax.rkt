@@ -7,54 +7,36 @@ ParselTongue.
 
 |#
 
+(define-type PrimVal
+  [VNum (n : number)]
+  [VStr (s : string)]
+  [VNone]
+  [VTrue]
+  [VFalse]
+  [VList (mutable : boolean) (data : (listof CVal))]
+  [VClosure (env : Env) (args : (listof symbol)) (body : CExp)])
+
 (define-type CExp
-  [CNum (n : number)]
-  [CStr (s : string)]
-  [CTrue]
   [CSeq (e1 : CExp) (e2 : CExp)]
   [CError (e1 : CExp)]
   [CIf (test : CExp) (then : CExp) (else : CExp)]
   [CId (x : symbol)]
-  [CLet (id : symbol) (scopeType : ScopeType) (bind : CExp) (body : CExp)]
+  [CLet (x : symbol) (bind : CExp) (body : CExp)]
+  [CList (mutable : boolean) (elts : (listof CExp))]
+  ;; Should we have a CSet! case? Or just desugar into something
+  ;; that adds a value to a global hashmap?
+  [CSet! (x : symbol) (bind : CExp)]
   [CApp (fun : CExp) (args : (listof CExp))]
-  [CFunc (args : (listof symbol)) (body : CExp) (vlist : (listof (ScopeType * symbol)))]
+  [CFunc (args : (listof symbol)) (body : CExp)]
   [CPrim1 (prim : symbol) (arg : CExp)]
-  ;;MADE BY ME:
-  [CPrim2 (op : symbol) (e1 : CExp) (e2 : CExp)]
-  [CFalse]
-  [CNone]
+  [CPrim2 (prim : symbol) (left : CExp) (right : CExp)]
   [CPass]
-  [CReturn (value : CExp)]
-  [CSet (id : CExp) (value : CExp)]
-  
-  ;[CBind (bind : (ScopeType * symbol))] ;;puts an identifier in the environment but does nothing in the store.
-  [CUnbound]
-  [CGlobalEnv]
-  
-  [C-NotExist (a : number)] ;;THIS IS HERE ONLY SO THAT python-interp won't complain about having completed all of the expressions
-  )
+  [CObject (type : PrimVal) (val : PrimVal) (fields : (hashof string CExp))]
+  [CSetField (obj : CExp) (field : CExp) (value : CExp)]
+  [CGetField (obj : CExp) (field : CExp)])
 
 (define-type CVal
-  [VNum (n : number)]
-  [VStr (s : string)]
-  [VTrue]
-  [VClosure (env : Env) (args : (listof symbol)) (body : CExp)]
-  ;;I ADDED;;
-  [VNone]
-  [VFalse]
-  [VPass]
-  [VUnbound]
-  )
+  [VObject (val : PrimVal) (fields : (hashof string CVal))])
 
-(define-type-alias Location number)
-(define-type ScopeType
-  [Local]
-  [NonLocal]
-  [Global])
+(define-type-alias Env (hashof symbol CVal))
 
-(define-type-alias SLTuple (ScopeType * number))
-(define-type-alias Env (hashof symbol SLTuple))
-(define-type-alias Store (hashof Location CVal))
-
-(define-type AnswerC
-  [ValueA (value : CVal) (store : Store)])
