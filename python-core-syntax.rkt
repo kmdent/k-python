@@ -14,7 +14,10 @@ ParselTongue.
   [VTrue]
   [VFalse]
   [VList (mutable : boolean) (data : (listof CVal))]
-  [VClosure (env : Env) (args : (listof symbol)) (body : CExp)])
+  [VClosure (env : Env) (args : (listof symbol)) (body : CExp)]
+  [VPass]
+  [VUnbound]
+)
 
 (define-type CExp
   [CSeq (e1 : CExp) (e2 : CExp)]
@@ -33,10 +36,27 @@ ParselTongue.
   [CPass]
   [CObject (type : PrimVal) (val : PrimVal) (fields : (hashof string CExp))]
   [CSetField (obj : CExp) (field : CExp) (value : CExp)]
-  [CGetField (obj : CExp) (field : CExp)])
+  [CGetField (obj : CExp) (field : CExp)]
+
+  ;; experimental
+  [CUnbound]
+  [CGlobalEnv]
+  [C-NotExist (a : number)])
 
 (define-type CVal
   [VObject (val : PrimVal) (fields : (hashof string CVal))])
 
-(define-type-alias Env (hashof symbol CVal))
+(define-type-alias Location number)
+(define-type ScopeType
+  [Local]
+  [NonLocal]
+  [Global])
 
+(define-type-alias SLTuple (ScopeType * number))
+(define-type-alias Env (hashof symbol SLTuple))
+(define-type-alias Store (hashof Location CVal))
+
+(define-type AnswerC
+  [ValueA (value : CVal) (store : Store)]
+  [ReturnA (value : CVal)]
+  [ExceptionA (value : CVal) (store : Store)])
