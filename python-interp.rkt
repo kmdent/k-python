@@ -49,7 +49,7 @@
             [ValueA (v s)
                     (let ([loc (new-loc)])
                       (interp-env body (extendEnv id (values scopeType loc) env) (overrideStore loc v s)))])]
-    [CList (mutable elts) 
+    [CList (mutable elts) ;; fix this to allow error-catching
            (local ([define sto-box (box sto)]
                    [define val-list (map (lambda (x)
                                            (type-case AnswerC (interp-env x env (unbox sto-box))
