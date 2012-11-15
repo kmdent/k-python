@@ -19,34 +19,36 @@ that calls the primitive `print`.
 
 (define print-lambda
   (CFunc (list 'to-print)
-         (CPrim1 'print (call-method (CId 'to-print) (str->cval "%str") empty))))
+         (CPrim1 'print
+                 (call-method (CId 'to-print)
+                                     (make-object (VStr "__str__"))
+                                     empty))))
 
 (define assert-true-lambda
   (CFunc (list 'check-true)
-         (CIf (CId 'check-true) (%to-object (VTrue)) (CError (%to-object (VStr "Assert failed"))))))
-
-(define true-val
-  (%to-object (VTrue)))
-
-(define false-val
-  (%to-object (VFalse)))
+         (CIf (CId 'check-true)
+              (make-true)
+              (CError (make-object (VStr "Assert failed"))))))
 
 (define len-lambda
-  (CFunc (list 'long-thing)
-         (CGetField (CId 'long-thing)
-                    (%to-object (VStr "%len")))))
+  (CFunc (list 'arg-id)
+         (CGetField (CId 'arg-id)
+                    (make-object (VStr "__len__")))))
 
 (define-type LibBinding
   [bind (left : symbol) (right : CExp)])
 
 (define lib-functions
   (list (bind 'print print-lambda)
-        (bind 'True true-val)
-        (bind '___assertTrue assert-true-lambda)
-        (bind 'False false-val)
-        (bind 'len len-lambda)
-
-))
+        (bind 'True (make-true))
+        (bind 'False (make-false))
+        (bind 'None (make-none))
+        (bind 'type type-class)
+        (bind 'NoneType none-class)
+        (bind 'int int-class)
+        (bind 'str str-class)
+        (bind 'bool bool-class)
+        (bind '___assertTrue assert-true-lambda)))
 
 (define (python-lib expr)
   (local [(define (python-lib/recur libs)

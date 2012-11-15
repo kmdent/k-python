@@ -14,7 +14,7 @@
 
 
 (define (str->cval (str : string)) : CExp
-  (%to-object (VStr str)))
+  (make-object (VStr str)))
 
 (define (call-method (obj : CExp) (name : CExp) (args : (listof CExp)))
   (CLet 'self (Local) obj
@@ -26,9 +26,9 @@
 (define (desugar (expr : PyExpr)) : CExp
   (type-case PyExpr expr
     [PySeq (es) (foldl (lambda (e1 e2) (CSeq e2 (desugar e1))) (desugar (first es)) (rest es))]
-    [PyNum (n) (%to-object (VNum n))]
+    [PyNum (n) (make-object (VNum n))]
     
-    [PyStr (s) (%to-object (VStr s))]
+    [PyStr (s) (make-object (VStr s))]
     
     [PyRaise (exn) (CError (desugar exn))]
     
@@ -136,26 +136,26 @@
 
 
 (define (get-prim-func op)
-  (%to-object (VStr
+  (make-object (VStr
                (cond
-                 [(equal? op 'add) "%add"]
-                 [(equal? op 'mul) "%mul"]
-                 [(equal? op 'sub) "%sub"]
-                 [(equal? op 'div) "%div"]
-                 [(equal? op 'floordiv) "%floordiv"]
+                 [(equal? op 'add) "__add__"]
+                 [(equal? op 'mul) "__mul__"]
+                 [(equal? op 'sub) "__sub__"]
+                 [(equal? op 'div) "__div__"]
+                 [(equal? op 'floordiv) "__floordiv__"]
                  
-                 [(equal? op 'or) "%or"]
-                 [(equal? op 'and) "%and"]
-                 [(equal? op 'not) "%not"]
+                 [(equal? op 'or) "__or__"]
+                 [(equal? op 'and) "__and__"]
+                 [(equal? op 'not) "__not__"]
                  
-                 [(equal? op 'is) "%is"]
+                 [(equal? op 'is) "__is__"]
                  
-                 [(equal? op 'lt) "%lt"]
-                 [(equal? op 'lte) "%le"]
-                 [(equal? op 'gt) "%gt"]
-                 [(equal? op 'gte) "%ge"]
-                 [(equal? op 'neq) "%ne"]
-                 [(equal? op 'eq) "%eq"]
+                 [(equal? op 'lt) "__lt__"]
+                 [(equal? op 'lte) "__le__"]
+                 [(equal? op 'gt) "__gt__"]
+                 [(equal? op 'gte) "__ge__"]
+                 [(equal? op 'neq) "__ne__"]
+                 [(equal? op 'eq) "__eq__"]
                  [else (error 'get-prim-func 
                               (string-append "Unrecognized primitive operation: " 
                                              (symbol->string op)))]

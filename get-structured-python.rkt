@@ -107,7 +107,6 @@ structure that you define in python-syntax.rkt
      'in]
     [(hash-table ('nodetype "NotIn"))
      'nin]
-    
     [(hash-table ('nodetype "If")
                  ('test test)
                  ('body body)
