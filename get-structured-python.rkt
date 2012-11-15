@@ -146,6 +146,16 @@ structure that you define in python-syntax.rkt
                  ('args args))
      (PyLambda (get-structured-python args) (get-structured-python body))]
     
+    [(hash-table ('nodetype "FunctionDef")
+                 ('name name)
+                 ('args args)
+                 ('body body)
+                 ('decorator_list decorator-list)
+                 ('returns returns))
+     (PyDef (string->symbol name)
+            (get-structured-python args)
+            (PySeq (map get-structured-python body)))]
+    
     ;;this case will need to be developed more fully as we start to incorporate
     ;;default arg values, and other cool stuff.
     [(hash-table ('nodetype "arguments")

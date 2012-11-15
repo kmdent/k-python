@@ -5,10 +5,10 @@
   [PyGlobal (ids : (listof symbol))]
   [PyNonlocal (ids : (listof symbol))]
   [PyGlobalEnv]
+  
+  [PyModule (exp : PyExpr)]
 
   ;; End scoping addit
-  
-  [PyGlobalEnv () (list)]
 
   [PySeq (es : (listof PyExpr))]
   
@@ -25,14 +25,16 @@
   
   [PyComp (left : PyExpr) (ops : (listof symbol)) (comparators : (listof PyExpr))]
   
-  [PyAssign (lhs : PyExpr) (value : PyExpr)]
+  [PyAssign (lhs : (listof PyExpr)) (value : PyExpr)]
   
   [PyLambda (args : (listof symbol)) (body : PyExpr)]
+  [PyDef (name : symbol) (args : (listof symbol)) (body : PyExpr)]
   
   [PyVoid]
   [PyPass]
   
   [PyRaise (exn : PyExpr)]
+  [PyReturn (val : PyExpr)]
   
   [PyNum (n : number)]
   [PyStr (s : string)]

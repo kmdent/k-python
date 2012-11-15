@@ -21,6 +21,8 @@ primitives here.
     [VTrue () "True"]
     [VFalse () "False"]
     [VNone () ""]
+    [VPass () ""]
+    [VUnbound () ""]
     [VList (mutable elts) (foldl string-append
                                  ""
                                  (list (if mutable "[" "(") 

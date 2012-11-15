@@ -24,13 +24,13 @@ ParselTongue.
   [CError (e1 : CExp)]
   [CIf (test : CExp) (then : CExp) (else : CExp)]
   [CId (x : symbol)]
-  [CLet (x : symbol) (bind : CExp) (body : CExp)]
+  [CLet (x : symbol) (scopeType : ScopeType) (bind : CExp) (body : CExp)]
   [CList (mutable : boolean) (elts : (listof CExp))]
   ;; Should we have a CSet! case? Or just desugar into something
   ;; that adds a value to a global hashmap?
-  [CSet! (x : symbol) (bind : CExp)]
+  [CSet! (x : CExp) (bind : CExp)]
   [CApp (fun : CExp) (args : (listof CExp))]
-  [CFunc (args : (listof symbol)) (body : CExp)]
+  [CFunc (args : (listof symbol)) (body : CExp)] ;;need to add vlist for scoping
   [CPrim1 (prim : symbol) (arg : CExp)]
   [CPrim2 (prim : symbol) (left : CExp) (right : CExp)]
   [CPass]
@@ -41,7 +41,8 @@ ParselTongue.
   ;; experimental
   [CUnbound]
   [CGlobalEnv]
-  [C-NotExist (a : number)])
+  ;;[C-NotExist (a : number)]
+  )
 
 (define-type CVal
   [VObject (val : PrimVal) (fields : (hashof string CVal))])
@@ -57,6 +58,6 @@ ParselTongue.
 (define-type-alias Store (hashof Location CVal))
 
 (define-type AnswerC
-  [ValueA (value : CVal) (store : Store)]
-  [ReturnA (value : CVal) (store :Store)]
-  [ExceptionA (value : CVal) (store : Store)])
+  [ValueA (value : CVal) (store : Store)])
+  ;;[ReturnA (value : CVal) (store : Store)] ;;we need these, I just don't want to type-case eveything yet
+  ;;[ExceptionA (value : CVal) (store : Store)])
