@@ -4,8 +4,7 @@
 
 (require "python-core-syntax.rkt"
          "python-primitives.rkt"
-         "python-objects.rkt"
-         "python-interp-helpers.rkt")
+         "python-objects.rkt")
 
 (require [typed-in racket (hash->list : ((hashof 'a 'b) -> (listof ('a * 'b))))])
 (require [typed-in racket (car : (('a * 'b) -> 'a))])
@@ -31,17 +30,21 @@
 
 (define none-obj (VObject (VNone) (make-hash empty)))
 
+(define (extract-pval (obj : CVal)) : PrimVal
+  (type-case CVal obj
+    [VObject (primval fields) primval]))
+
 (define (interp-env (expr : CExp) (env : Env) (sto : Store)) : AnswerC
   (type-case CExp expr
     [CError (e) (error 'interp (to-string (interp-env e env sto)))]
     [CUnbound () (ValueA (VObject (VUnbound) (make-hash (list))) sto)]
-       
+    
     [CIf (i t e)
          (type-case AnswerC (interp-env i env sto)
            [ValueA (v s)
-                   (if (booleanof v)
-                     (interp-env t env sto)
-                     (interp-env e env sto))])]
+                   (if (truthy? v)
+                       (interp-env t env sto)
+                       (interp-env e env sto))])]
     
     [CId (x) (ValueA (lookupStore (lookupVar x env) sto) sto)]
     [CLet (id scopeType bind body)
@@ -56,50 +59,58 @@
                                              [ValueA (v s)
                                                      (begin (set-box! sto-box s)
                                                             v)])) elts)])
-             (interp-env (%to-object (VList mutable val-list)) env (unbox sto-box)))]
-    
+             (interp-env (make-object (VList mutable val-list)) env (unbox sto-box)))]
     [CSeq (e1 e2)
           (type-case AnswerC (interp-env e1 env sto)
             [ValueA (v s) (interp-env e2 env s)])]
-
+    
     [CPass () (ValueA none-obj sto)]
     [CApp (fun arges)
           (type-case AnswerC (interp-env fun env sto)
             [ValueA (v s) (type-case CVal v
                             [VObject (primval fields) (type-case PrimVal primval
-                                        [VClosure (cenv argxs body)
-                                                  (interp-args-app cenv argxs body arges env sto (list))]
-                                        [else (error 'interp "Not a closure")])])])]
+                                                        [VClosure (cenv argxs body)
+                                                                  (interp-args-app cenv argxs body arges env sto (list))]
+                                                        [else (error 'interp "Not a closure")])])])]
     [CFunc (args body) (ValueA (VObject (VClosure (newEnvScope env (list) args) args body) (make-hash empty)) sto)] ;;need to add vlist
     [CSet! (a b) (error 'CSet! "Not yet implemented")]
     [CPrim1 (prim arg)
             (type-case AnswerC (interp-env arg env sto)
-              [ValueA (v s) (ValueA (python-prim1 prim v) s)])]
+              [ValueA (v s) (if (equal? prim 'print)
+                                (ValueA (python-print v) s)
+                                (interp-env (python-prim1 prim v) env s))])]
     [CPrim2 (op left right)
             (type-case AnswerC (interp-env left env sto)
               [ValueA (v s) (type-case AnswerC (interp-env right env s)
-                              [ValueA (v2 s2) (interp-env (Combine op v v2) env s2)])])]
-    [CObject (type pval fields) (interp-obj type pval (hash->list fields) env sto (make-hash (list)))]
+                              [ValueA (v2 s2) (interp-env (python-prim2 op v v2) env s2)])])]
+    [CObject (pval fields) (interp-obj pval (hash->list fields) env sto (make-hash (list)))] ; TODO
     [CSetField (obj field value) (type-case AnswerC (interp-env obj env sto)
-                                   (ValueA (v s) (type-case CVal v
-                                                   [VObject (primval fields) 
-                                                            (type-case AnswerC (interp-env field env s)
-                                                              (ValueA (objV objS)
-                                                                      (type-case AnswerC (interp-env value env objS)
-                                                                        (ValueA (valV valS)
-                                                                                (begin
-                                                                                  (hash-set! fields (obj-to-string objV) valV)
-                                                                                  (ValueA none-obj valS))))))])))]
+                                   (ValueA (objV objS)
+                                           (type-case CVal objV
+                                             [VObject (primval fields) 
+                                                      (type-case AnswerC (interp-env field env objS)
+                                                        (ValueA (fieldV fieldS)
+                                                                (type-case AnswerC (interp-env value env fieldS)
+                                                                  (ValueA (valV valS)
+                                                                          (if (equal? (get-class fieldV) "str")
+                                                                              (begin (hash-set! fields (VStr-s (extract-pval fieldV)) valV)
+                                                                                     (interp-env (make-none) env valS))
+                                                                              (interp-env (make-exception "Non-string field") env valS))))))])))]
     [CGetField (obj field) (type-case AnswerC (interp-env obj env sto)
-                             (ValueA (v s)
-                                     (type-case AnswerC (interp-env field env s)
+                             (ValueA (objV objS)
+                                     (type-case AnswerC (interp-env field env objS)
                                        (ValueA (fieldV fieldS)
-                                               (ValueA (search-obj v (obj-to-string fieldV)) fieldS)))))]
-    
-    [CGlobalEnv ()
-                (begin
-                  (set! globalEnv (createGlobalEnv env))
-                  (ValueA none-obj sto))]))
+                                               (if (equal? (get-class fieldV) "str")
+                                                   (type-case (optionof CVal) (hash-ref (VObject-fields objV) (VStr-s (extract-pval fieldV)))
+                                                     [some (v) (ValueA v fieldS)]
+                                                     [none () (interp-env (make-exception "No such field") env fieldS)])
+                                                   (interp-env (make-exception "Non-string field") env fieldS))))))]
+
+[CGlobalEnv ()
+            (begin
+              (set! globalEnv (createGlobalEnv env))
+              (ValueA none-obj sto))]))
+
 
 (define (bind-args args vals env)
   (cond [(and (empty? args) (empty? vals)) env]
@@ -113,15 +124,15 @@
   (type-case AnswerC (interp-env expr (hash (list)) (hash (list)))
     [ValueA (v s) v]))
 
-(define (interp-obj type pval fields env store interped-fields) : AnswerC
+(define (interp-obj pval fields env store interped-fields) : AnswerC
   (cond
     [(empty? fields) (ValueA (VObject pval interped-fields) store)]
     [else
      (local ([define f (first fields)])
        (type-case AnswerC (interp-env (cdr f) env store)
          [ValueA (v s) (begin (hash-set! interped-fields (car f) v)
-                              (interp-obj type pval (rest fields) env s interped-fields))]))]))
-    
+                              (interp-obj pval (rest fields) env s interped-fields))]))]))
+
 
 (define (interp-args-app closEnv closArgs closBody args env store interped-args) : AnswerC
   (cond
@@ -138,9 +149,9 @@
     [(empty? args) (interp-env body closEnv store)]
     [else
      (interp-app body closEnv (overrideStore (lookupEnv (first argsIds) closEnv) (first args) store) (rest argsIds) (rest args))]))
-          
-  
-                         
+
+
+
 
 ;; Scoping shit is below here.  Don't look at it.  Seriously.
 
@@ -161,8 +172,8 @@
   (hash-set env id sltuple))
 
 (define (overrideStore [location : Location]
-                      [value : CVal]
-                      [store : Store]) : Store
+                       [value : CVal]
+                       [store : Store]) : Store
   (hash-set store location value))
 
 (define (createGlobalEnv [env : Env]) : Env
@@ -252,8 +263,8 @@
                             othersList))
                 (addLocals env (rest localList) othersList)
                 (addLocals (extendEnv id
-                                       (values (Local) (new-loc))
-                                       env)
+                                      (values (Local) (new-loc))
+                                      env)
                            (rest localList)
                            othersList)))]))
 
@@ -286,11 +297,11 @@
                     (let ([newLocation (new-loc)])
                       (begin
                         (set! globalEnv (extendEnv id
-                                                    (values (Global) newLocation)
-                                                    env))
-                        (addGlobalVars (extendEnv id
                                                    (values (Global) newLocation)
-                                                   env)
+                                                   env))
+                        (addGlobalVars (extendEnv id
+                                                  (values (Global) newLocation)
+                                                  env)
                                        (rest vlist)))))
                 (addGlobalVars env (rest vlist))))]))
 

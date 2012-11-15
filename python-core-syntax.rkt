@@ -6,7 +6,7 @@ This is the core language; it is just borrowing a few things from
 ParselTongue.
 
 |#
-
+; TODO What is the primval for non-primitive objects?
 (define-type PrimVal
   [VNum (n : number)]
   [VStr (s : string)]
@@ -15,6 +15,7 @@ ParselTongue.
   [VFalse]
   [VList (mutable : boolean) (data : (listof CVal))]
   [VClosure (env : Env) (args : (listof symbol)) (body : CExp)]
+  [VClass (name : string)]
   [VPass]
   [VUnbound]
 )
@@ -34,7 +35,7 @@ ParselTongue.
   [CPrim1 (prim : symbol) (arg : CExp)]
   [CPrim2 (prim : symbol) (left : CExp) (right : CExp)]
   [CPass]
-  [CObject (type : PrimVal) (val : PrimVal) (fields : (hashof string CExp))]
+  [CObject (primval : PrimVal) (fields : (hashof string CExp))]
   [CSetField (obj : CExp) (field : CExp) (value : CExp)]
   [CGetField (obj : CExp) (field : CExp)]
 
