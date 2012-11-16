@@ -72,8 +72,14 @@
                                                         [VClosure (cenv argxs body)
                                                                   (interp-args-app cenv argxs body arges env sto (list))]
                                                         [else (error 'interp "Not a closure")])])])]
-    [CFunc (args body) (ValueA (VObject (VClosure (newEnvScope env (list) args) args body) (make-hash empty)) sto)] ;;need to add vlist
-    [CSet! (a b) (error 'CSet! "Not yet implemented")]
+    [CFunc (args body vlist) (ValueA (VObject (VClosure (newEnvScope env vlist args) args body) (make-hash empty)) sto)] ;;need to add vlist
+    [CSet! (a b) (type-case CExp a
+            [CId (id) (type-case AnswerC (interp-env b env sto)
+                               [ValueA (v s)
+                                       (ValueA v (overrideStore (lookupEnv id env)
+                                                               v
+                                                               s))])]
+            [else (error 'interp-CSet "For now, CSet only support ids that are symbols")])]
     [CPrim1 (prim arg)
             (type-case AnswerC (interp-env arg env sto)
               [ValueA (v s) (if (equal? prim 'print)
@@ -114,8 +120,8 @@
                                                    (type-case (optionof CVal) (hash-ref (VObject-fields objV) (VStr-s (extract-pval fieldV)))
                                                      [some (v) (ValueA v fieldS)]
                                                      [none () (local ([define classObj (interp-env
-                                                                                        (type-case (optionof CExp) (hash-ref (CObject-fields obj) "__class__" )
-                                                                                          [some (v) v]
+                                                                                        (type-case (optionof CVal) (hash-ref (VObject-fields objV) "__class__" )
+                                                                                          [some (v) (CId (string->symbol (VClass-name (VObject-val v))))]
                                                                                           [none () (make-exception "Class does not exist")]) env fieldS)])
                                                                 (type-case (optionof CVal) (hash-ref (VObject-fields (ValueA-value classObj)) (VStr-s (extract-pval fieldV)))
                                                                   [some (v) (ValueA v fieldS)]
@@ -137,9 +143,8 @@
                    (first args) (first vals))]))
 
 (define (interp expr) : CVal
-  (begin (display expr)
   (type-case AnswerC (interp-env expr (hash (list)) (hash (list)))
-    [ValueA (v s) v])))
+    [ValueA (v s) v]))
 
 (define (interp-obj pval fields env store interped-fields) : AnswerC
   (cond
@@ -360,3 +365,5 @@
     [none () (error 'getScopeType (string-append "Unbound Identifier : " (symbol->string id)))]
     [some (v) (local [(define-values (t l) v)]
                 t)]))
+
+

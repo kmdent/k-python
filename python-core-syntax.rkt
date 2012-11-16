@@ -31,7 +31,7 @@ ParselTongue.
   ;; that adds a value to a global hashmap?
   [CSet! (x : CExp) (bind : CExp)]
   [CApp (fun : CExp) (args : (listof CExp))]
-  [CFunc (args : (listof symbol)) (body : CExp)] ;;need to add vlist for scoping
+  [CFunc (args : (listof symbol)) (body : CExp) (vlist : (listof (ScopeType * symbol)))] ;;need to add vlist for scoping
   [CPrim1 (prim : symbol) (arg : CExp)]
   [CPrim2 (prim : symbol) (left : CExp) (right : CExp)]
   [CPass]

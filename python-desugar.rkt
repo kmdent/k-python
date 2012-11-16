@@ -34,7 +34,7 @@
     
     [PyPass () (CPass)]
     
-    [PyLambda (args body) (CFunc args (desugar body))]
+    [PyLambda (args body) (CFunc args (desugar body) (list))]
     
     [PyModule (exprs)
               (let ([global-vars (get-vars exprs)]) ;gets all of the assignments in the global scope
@@ -51,8 +51,8 @@
     
     [PyDef (name args body)
            (begin (CSeq
-                   (CSet! (CId name) (CFunc (list) (CError (CObject (VStr "dummy function was called!") (make-hash (list))))))
-                   (CLet 'some-func (Local) (CFunc args (desugar body)) ;;need (get-vars body) for scoping
+                   (CSet! (CId name) (CFunc (list) (CError (CObject (VStr "dummy function was called!") (make-hash (list)))) (list)))
+                   (CLet 'some-func (Local) (CFunc args (desugar body) (get-vars body)) ;;need (get-vars body) for scoping
                          (CSet! (CId name) (CId 'some-func)))))]    
     
     ;;[PyAssign (targets value)
