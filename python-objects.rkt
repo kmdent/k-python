@@ -2,7 +2,6 @@
 
 (require "python-core-syntax.rkt")
 
-
 (define (make-object-of-class class-id primval)
   (CObject primval (make-hash (list (values "__class__" (CId class-id))))))
 
@@ -106,7 +105,7 @@ or maybe but the function in __call__ in the class object, and look for classes 
                             (make-prim2-func "__add__" 'int-add)
                             (make-prim2-func "__sub__" 'int-sub)
                             (make-prim2-func "__mul__" 'int-mul)
-                            (make-prim2-func "__div__" 'int-sub)
+                            (make-prim2-func "__div__" 'int-div)
                             (make-prim2-func "__floordiv__" 'int-floordiv)
                             (make-prim2-func "__mod__" 'int-mod)
                             (make-prim2-func "__le__" 'int-le)

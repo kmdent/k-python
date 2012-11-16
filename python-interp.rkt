@@ -96,6 +96,16 @@
                                                                               (begin (hash-set! fields (VStr-s (extract-pval fieldV)) valV)
                                                                                      (interp-env (make-none) env valS))
                                                                               (interp-env (make-exception "Non-string field") env valS))))))])))]
+   ;; [CGetField (obj field) (type-case AnswerC (interp-env obj env sto)
+   ;;                          (ValueA (objV objS)
+      ;;                               (type-case AnswerC (interp-env field env objS)
+    ;;                                   (ValueA (fieldV fieldS)
+        ;;                                       (if (equal? (get-class fieldV) "str")
+          ;;                                         (type-case (optionof CVal) (hash-ref (VObject-fields objV) (VStr-s (extract-pval fieldV)))
+            ;;                                         [some (v) (ValueA v fieldS)]
+              ;;                                       [none () (interp-env (make-exception "No such field") env fieldS)])
+                ;;                                   (interp-env (make-exception "Non-string field") env fieldS))))))]
+    
     [CGetField (obj field) (type-case AnswerC (interp-env obj env sto)
                              (ValueA (objV objS)
                                      (type-case AnswerC (interp-env field env objS)
@@ -103,13 +113,19 @@
                                                (if (equal? (get-class fieldV) "str")
                                                    (type-case (optionof CVal) (hash-ref (VObject-fields objV) (VStr-s (extract-pval fieldV)))
                                                      [some (v) (ValueA v fieldS)]
-                                                     [none () (interp-env (make-exception "No such field") env fieldS)])
+                                                     [none () (local ([define classObj (interp-env
+                                                                                        (type-case (optionof CExp) (hash-ref (CObject-fields obj) "__class__" )
+                                                                                          [some (v) v]
+                                                                                          [none () (make-exception "Class does not exist")]) env fieldS)])
+                                                                (type-case (optionof CVal) (hash-ref (VObject-fields (ValueA-value classObj)) (VStr-s (extract-pval fieldV)))
+                                                                  [some (v) (ValueA v fieldS)]
+                                                                  [none () (interp-env (make-exception "No such field") env fieldS)]))])
                                                    (interp-env (make-exception "Non-string field") env fieldS))))))]
-
-[CGlobalEnv ()
-            (begin
-              (set! globalEnv (createGlobalEnv env))
-              (ValueA none-obj sto))]))
+    
+    [CGlobalEnv ()
+                (begin
+                  (set! globalEnv (createGlobalEnv env))
+                  (ValueA none-obj sto))]))
 
 
 (define (bind-args args vals env)
@@ -121,8 +137,9 @@
                    (first args) (first vals))]))
 
 (define (interp expr) : CVal
+  (begin (display expr)
   (type-case AnswerC (interp-env expr (hash (list)) (hash (list)))
-    [ValueA (v s) v]))
+    [ValueA (v s) v])))
 
 (define (interp-obj pval fields env store interped-fields) : AnswerC
   (cond

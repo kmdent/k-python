@@ -15,7 +15,7 @@ structure that you define in python-syntax.rkt
 (define (get-structured-python pyjson)
   (match pyjson
     [(hash-table ('nodetype "Module") ('body expr-list))
-     (PyModule (map get-structured-python expr-list))]
+     (PyModule (PySeq (map get-structured-python expr-list)))]
     [(hash-table ('nodetype "Expr") ('value expr))
      (get-structured-python expr)]
     [(hash-table ('nodetype "Call")
@@ -95,6 +95,8 @@ structure that you define in python-syntax.rkt
      'add]
     [(hash-table ('nodetype "Sub"))
      'sub]
+    [(hash-table ('nodetype "USub"))
+     'usub]
     [(hash-table ('nodetype "Mult"))
      'mul]
     [(hash-table ('nodetype "FloorDiv"))
@@ -138,7 +140,7 @@ structure that you define in python-syntax.rkt
     [(hash-table ('nodetype "Assign")
                  ('targets lhs)
                  ('value value))
-     (PyAssign (get-structured-python (first lhs)) (get-structured-python value))]
+     (PyAssign (map get-structured-python lhs) (get-structured-python value))]
     
     [(hash-table ('nodetype "Lambda")
                  ('body body)

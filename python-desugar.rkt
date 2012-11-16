@@ -51,13 +51,18 @@
     
     [PyDef (name args body)
            (begin (CSeq
-                   (CSet! (CId name) (CFunc (list) (CError (CObject (VStr "object") (VStr "dummy function was called!") (make-hash (list))))))
+                   (CSet! (CId name) (CFunc (list) (CError (CObject (VStr "dummy function was called!") (make-hash (list))))))
                    (CLet 'some-func (Local) (CFunc args (desugar body)) ;;need (get-vars body) for scoping
                          (CSet! (CId name) (CId 'some-func)))))]    
     
     ;;[PyAssign (targets value)
     ;;      (CLet 'assign-value (Local) (desugar value)
     ;;            (desugar (PySeq (map (lambda (e) (PySet! e (PyId 'assign-value))) targets))))]
+    
+    ; XXX look into order of ops for assign
+    [PyAssign (targets value) (CLet 'value-id (Local) (desugar value)
+                                    (local [(define assign-exprs (map (lambda (target) (CSet! (desugar target) (CId 'value-id))) targets))]
+                                      (foldl (lambda (e1 e2) (CSeq e2 e1)) (first assign-exprs) (rest assign-exprs))))]
     
     [PyIf (test body orelse) (CIf (desugar test)
                                   (desugar body)
@@ -77,6 +82,7 @@
     [PyComp (left ops comps) (CLet 'left-val (Local) (desugar left)
                                    (compare (CId 'left-val) ops (map desugar comps)))] ;;clueless for this one
     
+    [PyGlobalEnv () (CGlobalEnv)]
     
     [PyApp (f args) (CApp (desugar f) (map desugar args))]
     [PyId (x) (CId x)]
@@ -137,30 +143,30 @@
 
 (define (get-prim-func op)
   (make-object (VStr
-               (cond
-                 [(equal? op 'add) "__add__"]
-                 [(equal? op 'mul) "__mul__"]
-                 [(equal? op 'sub) "__sub__"]
-                 [(equal? op 'div) "__div__"]
-                 [(equal? op 'floordiv) "__floordiv__"]
-                 
-                 [(equal? op 'or) "__or__"]
-                 [(equal? op 'and) "__and__"]
-                 [(equal? op 'not) "__not__"]
-                 
-                 [(equal? op 'is) "__is__"]
-                 
-                 [(equal? op 'lt) "__lt__"]
-                 [(equal? op 'lte) "__le__"]
-                 [(equal? op 'gt) "__gt__"]
-                 [(equal? op 'gte) "__ge__"]
-                 [(equal? op 'neq) "__ne__"]
-                 [(equal? op 'eq) "__eq__"]
-                 [else (error 'get-prim-func 
-                              (string-append "Unrecognized primitive operation: " 
-                                             (symbol->string op)))]
-                 
-                 ))))
+                (cond
+                  [(equal? op 'add) "__add__"]
+                  [(equal? op 'mul) "__mul__"]
+                  [(equal? op 'sub) "__sub__"]
+                  [(equal? op 'div) "__div__"]
+                  [(equal? op 'floordiv) "__floordiv__"]
+                  
+                  [(equal? op 'or) "__or__"]
+                  [(equal? op 'and) "__and__"]
+                  [(equal? op 'not) "__not__"]
+                  
+                  [(equal? op 'is) "__is__"]
+                  
+                  [(equal? op 'lt) "__lt__"]
+                  [(equal? op 'lte) "__le__"]
+                  [(equal? op 'gt) "__gt__"]
+                  [(equal? op 'gte) "__ge__"]
+                  [(equal? op 'neq) "__ne__"]
+                  [(equal? op 'eq) "__eq__"]
+                  [else (error 'get-prim-func 
+                               (string-append "Unrecognized primitive operation: " 
+                                              (symbol->string op)))]
+                  
+                  ))))
 
 (define (get-vars [expr : PyExpr]) : (listof (ScopeType * symbol))
   (type-case PyExpr expr
@@ -196,14 +202,14 @@
     
     [PyBoolOp (op exprs)
               (foldl (lambda (a b) (append b a))
-                                   (list)
-                                   (map (lambda (e) (get-vars e)) exprs))]
+                     (list)
+                     (map (lambda (e) (get-vars e)) exprs))]
     [PyComp (left ops comparators)
-               (append
-                (get-vars left)
-                (foldl (lambda (a b) (append b a))
-                                   (list)
-                                   (map (lambda (e) (get-vars e)) comparators)))]
+            (append
+             (get-vars left)
+             (foldl (lambda (a b) (append b a))
+                    (list)
+                    (map (lambda (e) (get-vars e)) comparators)))]
     [PyPass () (list)]
     ;;[PyNone () (list)]
     [PyVoid () (list)]
@@ -246,10 +252,10 @@
 
 (define (get-ids [vars-list : (listof (ScopeType * symbol))]) : (listof symbol)
   (foldl (lambda (a b) (append b a))
-                       (list)
-                       (map (lambda (e) (local ([define-values (st id) e])
-                                                      (list id)))
-                              vars-list)))
+         (list)
+         (map (lambda (e) (local ([define-values (st id) e])
+                            (list id)))
+              vars-list)))
 
 (define (make-item-list [item : 'a]
                         [size : number]
